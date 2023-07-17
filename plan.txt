@@ -1,0 +1,8 @@
+Tech Stack - 
+typescript
+nextjs
+tailwind
+PostgreSQL
+Prisma/GraphQL
+Expressjs/Nextjs backend
+AWS???
