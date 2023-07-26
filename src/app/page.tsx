@@ -1,15 +1,18 @@
 "use client";
-import Image from 'next/image';
-import Link from "next/link";
 import {
   ApolloClient,
   InMemoryCache,
   gql,
   HttpLink
 } from "@apollo/client";
+import { useRouter } from "next/navigation";
+import { deleteCookie } from "cookies-next";
+
 
 export default function Home() {
- 
+
+const router = useRouter()
+
 const getClient = () => {
 return new ApolloClient({
   link: new HttpLink({
@@ -17,11 +20,13 @@ return new ApolloClient({
     headers: {
       "x-hasura-admin-secret":
         "",
+        
     },
   }),
   cache: new InMemoryCache(),
 });
 }
+
 
  const client = getClient();
 
@@ -36,6 +41,11 @@ return new ApolloClient({
   `;
 
   client.query({ query: GET_MESSENGER }).then((result) => console.log(result));
+
+  const logOut = () => {
+   deleteCookie("token");
+   router.push("/login")
+  }
 
 
   return (
@@ -83,7 +93,7 @@ return new ApolloClient({
           />
         </div>
       </div>
-      <Link href="/login">Login</Link>
+      <button onClick={logOut}>Logout</button>
     </main>
   );
 }
