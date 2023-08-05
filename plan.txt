@@ -3,13 +3,12 @@ typescript
 nextjs
 tailwind
 PostgreSQL
-Prisma/GraphQL/Hasura
+Hasura
 Apollo
-Expressjs/Nextjs backend
+Nextjs backend
 JWT
 AWS???
 Docker??
-
 
 
 
@@ -17,17 +16,21 @@ signup
 login
 generate JWT
 logout/delete JWT
+view profiles
+view all messages
+make replies/show replies
+View all socials for particular social media platforms
 
 
 
 User Object {
-    profile name
-    profile picture
-    social links maybe
-    past text messages
-    replies
-    bio
-    password
+   username
+   email
+   password
+  // Message[]
+  // socialLinks[]
+   bio
+   picture
 }
 
 AllSocialLinks {
@@ -39,11 +42,19 @@ AllBios {
     biomessages[]
 }
 
-AllReplies {
-    
+
+Reply {
+  id
+  replier
+  repliee
+  reply
+  Message (relational for message)
 }
 
-AllTextMessages {
+Message {
     id
-    text[]
+    message
+    username
+    isReply (optional relation to all replies)
+    User (relation to User)
 }

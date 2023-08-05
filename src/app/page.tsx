@@ -19,13 +19,15 @@ return new ApolloClient({
     uri: "https://optimal-cub-76.hasura.app/v1/graphql",
     headers: {
       "x-hasura-admin-secret":
-        "",
-        
+       process.env.HASURA as string,
     },
   }),
   cache: new InMemoryCache(),
 });
 }
+
+
+console.log(process.env.HASURA)
 
 
  const client = getClient();

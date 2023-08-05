@@ -5,7 +5,10 @@ import { jwtVerify } from "jose";
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token");
-   if (request.nextUrl.pathname.startsWith("/")) {
+   if (
+     request.nextUrl.pathname.startsWith("/") ||
+     request.nextUrl.pathname.startsWith("/profile")
+   ) {
      if (!token) {
        return NextResponse.redirect(new URL("/login", request.url));
      } else if (token) {
@@ -31,5 +34,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: ["/", "/profile"],
 };
