@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { ApolloClient, InMemoryCache, gql, HttpLink } from "@apollo/client";
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
 
@@ -11,51 +10,25 @@ export default function Login() {
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
 
-  const getClient = () => {
-    return new ApolloClient({
-      link: new HttpLink({
-        uri: "https://optimal-cub-76.hasura.app/v1/graphql",
-        headers: {
-          "x-hasura-admin-secret":
-            "",
-        },
-      }),
-      cache: new InMemoryCache(),
-    });
-  };
-
-  const client = getClient();
-
-  const GET_MESSENGER = gql`
-    query GetMessenger {
-      Messenger(where: { username: { _eq: "${username}"} }) {
-        password
-      }
-    }
-  `;
-
+ 
    const handleSubmit = async (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault()
-
-    const fetchPassword = await client.query({ query: GET_MESSENGER });
-
-    if(fetchPassword.data.Messenger.length === 0) {
-      window.alert("This Username Does Not Exist")
-      return
-    }
-
-    const databasePassword:string = fetchPassword.data.Messenger[0].password
     
      const response = await fetch("/generateToken", {
        method: "POST",
-       body: JSON.stringify({databasePassword, username, password})
+       body: JSON.stringify({username, password})
      });
 
      const { output } = await response.json();
 
+      if (output === "Invalid Username!") {
+        window.alert("Invalid Username!");
+        return;
+      }
+
      if (output === "Invalid Password!") {
-        window.alert("Wrong Password!")
-        return
+       window.alert("Invalid Password!");
+       return;
      }
 
      router.push("/")

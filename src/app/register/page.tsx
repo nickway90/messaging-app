@@ -3,74 +3,14 @@ import { useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { ApolloClient, InMemoryCache, gql, HttpLink } from "@apollo/client";
-
 export default function Register() {
 
-  const router = useRouter()
+const router = useRouter()
 
 const [email,setEmail] = useState<string>("")
 const [username, setUsername] = useState<string>("");
 const [password, setPassword] = useState<string>("");
 
-const getClient = () => {
-  return new ApolloClient({
-    link: new HttpLink({
-      uri: "https://optimal-cub-76.hasura.app/v1/graphql",
-      headers: {
-        "x-hasura-admin-secret": process.env.HASURA as string,
-      },
-    }),
-    cache: new InMemoryCache(),
-  });
-};
-
-const EMAIL_TAKEN = gql`
-  query EmailTaken {
-    Messenger(
-      where: {
-        email: { _eq: "${email}" }
-      }
-    ) {
-      email
-    }
-  }
-`;
-
-const USERNAME_TAKEN = gql`
-  query UsernameTaken {
-     Messenger(
-      where: {
-        username: { _eq: "${username}" }
-      }
-    ) {
-      username
-    }
-  }
-`;
-
-const ADD_MESSENGER = gql`
-  mutation AddMessenger($object: Messenger_insert_input!) {
-    insert_Messenger_one(object: $object) {
-      id
-      username
-      email
-      password
-    }
-  }
-`;
-const client = getClient();
-
-async function fetchGeneratedPassword() {
-  const response = await fetch("/password", {
-    method: "POST",
-    body: JSON.stringify({ password }),
-  });
-
-
-  const {output} = await response.json()
-  return output
-}
 
  const handleSubmit = async (e: React.ChangeEvent<HTMLFormElement>) => {
   e.preventDefault()
@@ -85,24 +25,28 @@ async function fetchGeneratedPassword() {
        return;
      }
 
-  const usernameTaken = await client.query({ query: USERNAME_TAKEN });
+     const response = await fetch("/createMessenger", {
+       method: "POST",
+       body: JSON.stringify({ password, email, username }),
+     });
 
-  const emailTaken = await client.query({ query: EMAIL_TAKEN });
+     const { output } = await response.json();
 
-   if(usernameTaken.data.Messenger.length > 0 || emailTaken.data.Messenger.length > 0) {
-     window.alert("Make Sure Email And Username Haven't been taken")
-     return
-   }
+     if (output === "This Username Has Already Been Taken") {
+       window.alert("This Username Has Already Been Taken");
+       return
+     }
 
-   const hashedPassword = await fetchGeneratedPassword()
+      if (output === "This Email Has Already Been Taken") {
+        window.alert("This Email Has Already Been Taken");
+        return
+      }
 
-   const object = {bio: "", email: email, password: hashedPassword, profile_picture: null, username: username}
+       if (output === "Messenger Successfully Added") {
+         window.alert("You have successfully registered");
+       }
 
-   const saveRegistration = await client.mutate({ mutation: ADD_MESSENGER, variables: {object} });
-
-   if(saveRegistration) window.alert("You have successfully registered")
-
-   router.push("/login")
+       router.push("/login")
  }; 
 
   return (

@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
        return NextResponse.redirect(new URL("/login", request.url));
      } else if (token) {
        try {
-         await jwtVerify(token.value, new TextEncoder().encode("biscuit"));
+         await jwtVerify(token.value, new TextEncoder().encode(process.env.JWT_SECRET));
        } catch (err) {
          console.log(err);
          return NextResponse.redirect(new URL("/login", request.url));
