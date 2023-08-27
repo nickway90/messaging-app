@@ -11,8 +11,6 @@ AWS???
 Docker??
 
 
-delete messages
-edit messages
 make replies
 fix rendering issues
 fix middleware for login
