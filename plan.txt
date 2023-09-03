@@ -12,7 +12,6 @@ Docker??
 
 
 make replies
-fix rendering issues
 fix middleware for login
 
 

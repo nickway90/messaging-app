@@ -3,12 +3,23 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { deleteCookie, getCookie } from "cookies-next";
 import Link from "next/link";
+import { useSubscription, gql } from "@apollo/client";
 
 type Messages = {
   message:string
   username:string
   id:number
 };
+
+const GET_DATA = gql`
+  subscription getMessages {
+    Message(order_by: { id: asc }) {
+      message
+      username
+      id
+    }
+  }
+`;
 
 export default function Home() {
   const [username, setUsername] = useState<string>("")
@@ -20,7 +31,10 @@ export default function Home() {
   const [messageIndex, setMessageIndex] = useState<number | null>(null)
   const [editOn, setEditOn] = useState<boolean>(false)
   const [newMessage, setNewMessage] = useState<string>("")
+  const [replyModal, setReplyModal] = useState<boolean>(false)
 
+  const { loading, error, data } = useSubscription(GET_DATA);
+   
 const router = useRouter()
 
 const allMessengers = new Map();
@@ -33,14 +47,11 @@ const allMessengers = new Map();
       },
     });
     const allMessages = await response.json()
-    const Messengers = allMessages.messages.data.Messenger;
-    for(const messenger of Messengers) {
-        allMessengers.set(messenger.username, messenger.profile_picture)
-  }
-  setMessengerMap(allMessengers)
-  setFetchedMessages(allMessages.messages.data.Message);
-  setLastIndex(fetchedMessages.length-1)
-  console.log(allMessages)
+      const Messengers = allMessages.messages.data.Messenger;
+        for(const messenger of Messengers) {
+            allMessengers.set(messenger.username, messenger.profile_picture)
+      }
+      setMessengerMap(allMessengers)
 }
 
 const reset = async () => {
@@ -114,11 +125,7 @@ const reset = async () => {
      });
      const data = await response.json()
 
-       if (!data.error) {
-         window.alert(data.output);
-       } else {
-         window.alert(data.error);
-       }
+       if(data.error) window.alert(error)
 
       await reset();
   }
@@ -135,41 +142,46 @@ const reset = async () => {
 
     const data = await response.json()
 
-    if(!data.error) {
-      window.alert(data.output)
-    } else {
-      window.alert(data.error)
-    }
+    if(data.error) window.alert(data.error)
 
      await reset();
   }
 
 
-
   useEffect(() => {
-    fetchMessages()
+    setInterval(async() => {
+      await fetchMessages();
+    }, 3000)
     getUserName()
-  },[])
+},[])
 
+useEffect(() => {
+   if (!loading) {
+     setFetchedMessages(data.Message);
+     setLastIndex(fetchedMessages.length - 1);
+   }
+})
 
   return (
     <>
       <main className="flex justify-center items-center h-screen">
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col bg-[#B3C7D6]  h-[80%] w-[80%] md:w-[55%]  rounded-md"
+          className="flex flex-col bg-[#B3C7D6] overflow-y-scroll  h-[80%] w-[80%] md:w-[55%]  rounded-md"
         >
           {fetchedMessages.map((message, index) => {
             return (
               <main
-                className={`flex justify-end overflow-y-auto pt-3 w-[100%] ${
+                className={`flex ${
+                  message.username === username && "justify-end"
+                } pt-3 w-[100%] ${
                   index === lastIndex ? "h-[100%]" : "h-[25%]"
                 }`}
                 key={index}
               >
                 {message.username === username ? (
                   <>
-                    <div className="flex justify-end">
+                    <div className="flex">
                       {index === messageIndex && editOn && (
                         <div className="flex flex-col items-center rounded-md w-auto h-[70px] z-50 text-white bg-black relative top-6 right-5">
                           <span className="flex cursor-pointer justify-center items-center px-3 pt-3">
@@ -178,9 +190,7 @@ const reset = async () => {
                             </p>
                           </span>
                           <span className="flex justify-center pb-3 items-center border-t-gray-500 border-solid w-[100%] text-center border-t-[1px] cursor-pointer">
-                            <p
-                              onClick={() => handleEditModal("")}
-                            >
+                            <p onClick={() => handleEditModal("")}>
                               Cancel Edit
                             </p>
                           </span>
@@ -194,9 +204,7 @@ const reset = async () => {
                             </p>
                           </span>
                           <span className="flex justify-center pb-3 items-center border-t-gray-500 border-solid w-[100%] text-center border-t-[1px] cursor-pointer">
-                            <p
-                              onClick={() => handleEditModal(message.message)}
-                            >
+                            <p onClick={() => handleEditModal(message.message)}>
                               edit
                             </p>
                           </span>
@@ -228,7 +236,10 @@ const reset = async () => {
                           )}
                           <Link href={`/profile/${message.username}`}>
                             <img
-                              src={messengerMap.get(message.username)}
+                              src={
+                                messengerMap.get(message.username) ??
+                                "./discord.jpeg"
+                              }
                               alt=""
                               className="rounded-3xl w-10 mr-3 h-10"
                             />
@@ -238,8 +249,8 @@ const reset = async () => {
                     </div>
                   </>
                 ) : (
-                  <div className="flex">
-                    <div className="flex flex-col">
+                  <div className="flex justify-start">
+                    <div className="flex flex-col pl-4">
                       <div>
                         <p>{message.username}</p>
                       </div>
@@ -247,11 +258,16 @@ const reset = async () => {
                         <div className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black">
                           <p>{message.message}</p>
                         </div>
-                        <img
-                          src={messengerMap.get(message.username)}
-                          alt=""
-                          className="rounded-3xl w-10 mr-3 h-10"
-                        />
+                        <Link href={`/profile/${message.username}`}>
+                          <img
+                            src={
+                              messengerMap.get(message.username) ??
+                              "./discord.jpeg"
+                            }
+                            alt=""
+                            className="rounded-3xl w-10 mr-3 h-10"
+                          />
+                        </Link>
                       </div>
                     </div>
                   </div>
