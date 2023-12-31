@@ -20,6 +20,7 @@ const getClient = () => {
        isReply
        message
        username
+       ReplyingTo
      }
    }
  `;
@@ -29,10 +30,12 @@ export async function POST(req: Request, res: NextResponse) {
   const body = await req.json()
 
   const client = getClient();
-
+  
   const object = {
    message: body.message,
-   username: body.username
+   username: body.username,
+   isReply: body.isReply,
+   ReplyingTo: body.ReplyingTo
   };
 
   try {

@@ -9,6 +9,8 @@ type Messages = {
   message:string
   username:string
   id:number
+  isReply:boolean
+  ReplyingTo: string | null
 };
 
 const GET_DATA = gql`
@@ -17,6 +19,8 @@ const GET_DATA = gql`
       message
       username
       id
+      isReply
+      ReplyingTo
     }
   }
 `;
@@ -32,8 +36,10 @@ export default function Home() {
   const [editOn, setEditOn] = useState<boolean>(false)
   const [newMessage, setNewMessage] = useState<string>("")
   const [replyModal, setReplyModal] = useState<boolean>(false)
+  const [replying, setReplying] = useState<boolean>(false)
+  const [replyingTo, setReplyingTo] = useState<string | null>("")
 
-  const { loading, error, data } = useSubscription(GET_DATA);
+const { loading, error, data } = useSubscription(GET_DATA);
    
 const router = useRouter()
 
@@ -72,20 +78,39 @@ const reset = async () => {
   const handleSubmit = async (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (message === "") return;
-    const response = await fetch("/postMessage", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, message }),
-    });
+    if(replying) {
+        const response = await fetch("/postMessage", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, message, isReply: true, ReplyingTo: replyingTo }),
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (data.outcome !== "Message has been posted") {
-      window.alert("Message failed");
+        if (data.outcome !== "Message has been posted") {
+          window.alert("Reply failed");
+        }
+       setReplying(false);
+       setReplyModal(false);
+       setReplyingTo("");
+    } else {
+       const response = await fetch("/postMessage", {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+         },
+         body: JSON.stringify({ username, message, isReply: false, ReplyingTo: null }),
+       });
+
+       const data = await response.json();
+
+       if (data.outcome !== "Message has been posted") {
+         window.alert("Message failed");
+       }
     }
-    await reset()
+    setMessage("")
   };
 
   const logOut = () => {
@@ -112,6 +137,18 @@ const reset = async () => {
         setEditOn(true);
         setMessageModal(false);
         setNewMessage(message);
+    }
+  }
+
+  const handleReplyModal = (index:number, message:string) => {
+    if(!replyModal) {
+      setReplyModal(true)
+      setMessageIndex(index)
+      setReplyingTo(message);
+    } else {
+      setReplyModal(false)
+      setMessageIndex(null)
+      setReplyingTo("");
     }
   }
 
@@ -158,6 +195,7 @@ const reset = async () => {
 useEffect(() => {
    if (!loading) {
      setFetchedMessages(data.Message);
+     console.log(data.Message)
      setLastIndex(fetchedMessages.length - 1);
    }
 })
@@ -175,7 +213,7 @@ useEffect(() => {
                 className={`flex ${
                   message.username === username && "justify-end"
                 } pt-3 w-[100%] ${
-                  index === lastIndex ? "h-[100%]" : "h-[25%]"
+                  index === lastIndex ? "h-[100%] mb-5" : "h-[25%]"
                 }`}
                 key={index}
               >
@@ -211,10 +249,40 @@ useEffect(() => {
                         </div>
                       )}
                       <div className="flex flex-col">
-                        <div>
-                          <p>{username}</p>
-                        </div>
-                        <div className="flex">
+                        {message.isReply && message.ReplyingTo === null && (
+                          <div className="flex items-center mb-2">
+                            <div
+                              onClick={() => handleMessageModal(index)}
+                              className="flex mr-1 justify-center whitespace-nowrap items-center pl-2 pr-2 bg-white h-auto max-w-[90%] w-auto rounded-md text-black cursor-pointer mt-5 opacity-50"
+                            >
+                              <p className="p-2 italic">
+                                Original Messaage Deleted
+                              </p>
+                            </div>
+                            <img
+                              src="/arrow2.png"
+                              alt=""
+                              className="w-8 h-8 rotate-90 translate-y-3 mr-8 "
+                            />
+                          </div>
+                        )}
+                        {message.isReply && message.ReplyingTo !== null && (
+                          <div className="flex items-center mb-2">
+                            <div
+                              onClick={() => handleMessageModal(index)}
+                              className="flex mr-1 justify-center whitespace-nowrap items-center pl-2 pr-2 bg-white h-auto max-w-[90%] w-auto rounded-md text-black cursor-pointer mt-5 opacity-50 "
+                            >
+                              <p className="p-2">{message.ReplyingTo}</p>
+                            </div>
+                            <img
+                              src="/arrow2.png"
+                              alt=""
+                              className="w-8 h-8 rotate-90 translate-y-3 mr-8"
+                            />
+                          </div>
+                        )}
+                        <div className="flex justify-end h-[24px]" />
+                        <div className="flex justify-end">
                           {index === messageIndex && editOn ? (
                             <div className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black">
                               <input
@@ -227,12 +295,19 @@ useEffect(() => {
                               />
                             </div>
                           ) : (
-                            <div
-                              onClick={() => handleMessageModal(index)}
-                              className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black cursor-pointer"
-                            >
-                              <p>{message.message}</p>
-                            </div>
+                            <>
+                              <p className="relative bottom-[25px] left-[50px]">
+                                {username}
+                              </p>
+                              <div
+                                onClick={() => handleMessageModal(index)}
+                                className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black cursor-pointer"
+                              >
+                                <p className="whitespace-nowrap">
+                                  {message.message}
+                                </p>
+                              </div>
+                            </>
                           )}
                           <Link href={`/profile/${message.username}`}>
                             <img
@@ -251,11 +326,46 @@ useEffect(() => {
                 ) : (
                   <div className="flex justify-start">
                     <div className="flex flex-col pl-4">
+                      {message.isReply && message.ReplyingTo === null && (
+                        <div className="flex items-center justify-center">
+                          <img
+                            src="/arrow2.png"
+                            alt=""
+                            className="w-8 h-8 rotate-90 mr-4 scale-y-[-1]"
+                          />
+                          <div
+                            onClick={() => handleMessageModal(index)}
+                            className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black cursor-pointer opacity-50"
+                          >
+                            <p className="italic">Original Message Deleted</p>
+                          </div>
+                        </div>
+                      )}
+                      {message.isReply && message.ReplyingTo !== null && (
+                        <div className="flex items-center justify-center">
+                          <img
+                            src="/arrow2.png"
+                            alt=""
+                            className="w-8 h-8 rotate-90 mr-4 scale-y-[-1]"
+                          />
+                          <div
+                            onClick={() => handleMessageModal(index)}
+                            className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black cursor-pointer opacity-50"
+                          >
+                            <p>{message.ReplyingTo}</p>
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <p>{message.username}</p>
                       </div>
                       <div className="flex">
-                        <div className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black">
+                        <div
+                          onClick={() =>
+                            handleReplyModal(index, message.message)
+                          }
+                          className="flex mr-1 justify-center break-normal whitespace-normal items-center pl-2 pr-2 bg-white max-h-[10rem] max-w-[90%] w-auto rounded-md text-black cursor-pointer"
+                        >
                           <p>{message.message}</p>
                         </div>
                         <Link href={`/profile/${message.username}`}>
@@ -268,6 +378,16 @@ useEffect(() => {
                             className="rounded-3xl w-10 mr-3 h-10"
                           />
                         </Link>
+                        {index === messageIndex && replyModal && !replying && (
+                          <div
+                            onClick={() => setReplying(true)}
+                            className="flex flex-col items-center rounded-md w-auto h-[35px] z-50 text-white bg-black relative left-5"
+                          >
+                            <span className="flex cursor-pointer justify-center items-center px-3 pt-[6px]">
+                              <p>Reply</p>
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -275,10 +395,27 @@ useEffect(() => {
               </main>
             );
           })}
-          <div className="flex flex-col justify-end h-[10%] w-[100%]">
+          {replying && (
+            <div
+              onClick={() => {
+                setReplying(false);
+                setReplyModal(false);
+                setReplyingTo("");
+                setMessage("")
+              }}
+              className="flex flex-row-reverse mt-2 w-full h-10"
+            >
+              <div className="flex items-center justify-center text-white rounded-t-md w-32 h-10 bg-black cursor-pointer">
+                <p className="">Cancel Reply</p>
+              </div>
+            </div>
+          )}
+          <div className="flex flex-col h-[10%] w-[100%]">
             <input
-              className="flex justify-end h-10 pl-3 "
-              placeholder="Whats on your mind..."
+              className="flex justify-end h-10 pl-3 outline-none"
+              placeholder={`${
+                replying ? "What is your reply..." : "Whats on your mind..."
+              }`}
               type="text"
               value={message}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {

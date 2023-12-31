@@ -21,18 +21,24 @@ export async function middleware(request: NextRequest) {
      }
    }
 
-  //  if(request.nextUrl.pathname.startsWith("/login")) {
-  //      try {
-  //        await jwtVerify(token?.value as string, new TextEncoder().encode("biscuit"));
-  //        return NextResponse.redirect(new URL("/", request.url));
-  //      } catch (err) {
-  //        console.log(err);
-  //      }
+  //  if (
+  //    request.nextUrl.pathname.startsWith("/login") ||
+  //    request.nextUrl.pathname.startsWith("/register") && token
+  //  ) {
+  //    try {
+  //      await jwtVerify(
+  //        token?.value as string,
+  //        new TextEncoder().encode(process.env.JWT_SECRET)
+  //      );
+  //      return NextResponse.redirect(new URL("/", request.url));
+  //    } catch (err) {
+  //      console.log(err);
+  //    }
   //  }
 
    return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/", "/profile"],
+  matcher: ["/", "/login"],
 };

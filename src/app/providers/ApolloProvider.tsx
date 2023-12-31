@@ -16,7 +16,7 @@ const httpLink = new HttpLink({
   uri: "https://optimal-cub-76.hasura.app/v1/graphql",
   headers: {
     "x-hasura-admin-secret":
-      "",
+      "cEfqoFJ2Mq0BnSSAKjKBo4oPs6wFMi0CVTHI4ayT8rPBMaYEwLen86EeHOC36A7W",
   },
 });
 
@@ -27,7 +27,7 @@ const wsLink = new WebSocketLink({
     connectionParams: {
       headers: {
         "x-hasura-admin-secret":
-          "",
+          "cEfqoFJ2Mq0BnSSAKjKBo4oPs6wFMi0CVTHI4ayT8rPBMaYEwLen86EeHOC36A7W",
       },
     },
   },
